@@ -1,0 +1,15 @@
+D:\Gabi\projects\Kotys\Kotys\bin\Debug\Kotys.exe.config
+D:\Gabi\projects\Kotys\Kotys\bin\Debug\Kotys.exe
+D:\Gabi\projects\Kotys\Kotys\bin\Debug\Kotys.pdb
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.csprojResolveAssemblyReference.cache
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.Properties.Resources.resources
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.csproj.GenerateResource.Cache
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.exe
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.pdb
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.Form1.resources
+D:\Gabi\projects\Kotys\Kotys\bin\Debug\MetroFramework.Design.dll
+D:\Gabi\projects\Kotys\Kotys\bin\Debug\MetroFramework.dll
+D:\Gabi\projects\Kotys\Kotys\bin\Debug\MetroFramework.Fonts.dll
+D:\Gabi\projects\Kotys\Kotys\bin\Debug\MySql.Data.dll
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.LogInForm.resources
+D:\Gabi\projects\Kotys\Kotys\obj\Debug\Kotys.FormSettings.resources

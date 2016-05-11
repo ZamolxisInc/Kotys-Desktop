@@ -1,1 +1,1 @@
-# Kotys-Desktop
+# Kotys
