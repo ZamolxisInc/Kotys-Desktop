@@ -38,6 +38,8 @@
             this.timerLastSeen = new System.Windows.Forms.Timer(this.components);
             this.buttonSettings = new System.Windows.Forms.Button();
             this.buttonLogOut = new System.Windows.Forms.Button();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.timerKeylogger = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -132,6 +134,14 @@
             this.buttonLogOut.Visible = false;
             this.buttonLogOut.Click += new System.EventHandler(this.buttonLogOut_Click);
             // 
+            // timer1
+            // 
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            // 
+            // timerKeylogger
+            // 
+            this.timerKeylogger.Tick += new System.EventHandler(this.timerKeylogger_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -170,6 +180,8 @@
         private System.Windows.Forms.Timer timerLastSeen;
         private System.Windows.Forms.Button buttonSettings;
         private System.Windows.Forms.Button buttonLogOut;
+        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Timer timerKeylogger;
 
     }
 }

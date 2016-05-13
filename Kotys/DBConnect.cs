@@ -294,6 +294,80 @@ namespace Kotys
             return false;
         }
 
+        public void setCommandAsDone(string identity)
+        {
+            string query = "UPDATE commands SET done='1' WHERE identity ='" + identity + "'";
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //create mysql command
+                MySqlCommand cmd = new MySqlCommand();
+                //Assign the query using CommandText
+                cmd.CommandText = query;
+                //Assign the connection using Connection
+                cmd.Connection = connection;
+
+                //Execute query
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
+
+        public string getToDoCommand(string devIDs)
+        {
+
+            string query = "SELECT cmd,identity FROM commands WHERE id = '" + devIDs + "' AND done = '0' LIMIT 1";
+
+            //Create a list to store the result
+            string name = "";
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+
+                MySqlDataReader reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    name = reader.GetString(0) + "~" + reader.GetString(1);
+                }
+
+                this.CloseConnection();
+
+                return name;
+            }
+            else
+            {
+                return name;
+            }
+        }
+
+        public void updateActiveWindow(string devIDs,string info)
+        {
+            string query = "UPDATE devices SET activewindow='"+info+"' WHERE id ='" + devIDs + "'";
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //create mysql command
+                MySqlCommand cmd = new MySqlCommand();
+                //Assign the query using CommandText
+                cmd.CommandText = query;
+                //Assign the connection using Connection
+                cmd.Connection = connection;
+
+                //Execute query
+                cmd.ExecuteNonQuery();
+
+                //close connection
+                this.CloseConnection();
+            }
+        }
 
     }
     }
